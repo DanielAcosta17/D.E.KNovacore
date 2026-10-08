@@ -1,0 +1,14 @@
+=============================================================
+CARPETA DE LOGOTIPO D.E.K NOVACORE
+Ruta: /src/public/images/
+=============================================================
+
+Puedes colocar o actualizar tu logo aquí:
+- logo.jpg
+- logo.png
+
+El sistema cargará automáticamente tu logotipo desde:
+1. /src/public/images/logo.jpg
+2. /public/images/logo.jpg
+3. /public/logo.jpg
+=============================================================

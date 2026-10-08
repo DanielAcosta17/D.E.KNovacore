@@ -1,0 +1,283 @@
+import React, { useState, useEffect } from 'react';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { BusinessProvider, useBusiness } from './contexts/BusinessContext';
+import { CartProvider } from './contexts/CartContext';
+import { Navbar } from './components/common/Navbar';
+import { Footer } from './components/common/Footer';
+import { Hero } from './components/landing/Hero';
+import { Services } from './components/landing/Services';
+import { AnyBusinessCanBeDigital } from './components/landing/AnyBusinessCanBeDigital';
+import { HowItWorks } from './components/landing/HowItWorks';
+import { TemplatesSection } from './components/landing/TemplatesSection';
+import { Pricing } from './components/landing/Pricing';
+import { ContactSection } from './components/landing/ContactSection';
+import { PublicBusinessView } from './components/public/PublicBusinessView';
+import { AdminLayout } from './components/admin/AdminLayout';
+import { BusinessOrderModal } from './components/common/BusinessOrderModal';
+import { CustomCursor } from './components/common/CustomCursor';
+import { FloatingWhatsAppWidget } from './components/common/FloatingWhatsAppWidget';
+
+import { DEKLogo } from './components/common/DEKLogo';
+
+const AppContent: React.FC = () => {
+  const {
+    activeView,
+    activeBusiness,
+    currentPublicSlug,
+    goToPublicStore,
+    goToAdmin,
+    goToLanding,
+    businesses,
+    isLoading,
+    defaultHomePage,
+  } = useBusiness();
+
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [selectedPlanForModal, setSelectedPlanForModal] = useState('Plan Pro');
+
+  // Atajo de teclado secreto para Administrador: Ctrl + Shift + A (o Cmd + Shift + A)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        goToAdmin();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [goToAdmin]);
+
+  // Synchronize with URL routing (hash, search params, pathname)
+  useEffect(() => {
+    const handleUrlRoute = () => {
+      // 1. Check Hash: e.g. #negocio/pasteleria or #pasteleria or #admin
+      let rawHash = window.location.hash.replace(/^#\/?/, '').trim();
+      if (rawHash.includes('?')) {
+        rawHash = rawHash.split('?')[0];
+      }
+      rawHash = rawHash.replace(/\/+$/, '');
+
+      // 2. Check Search query: e.g. ?negocio=slug or ?tienda=slug or ?b=slug
+      const urlParams = new URLSearchParams(window.location.search);
+      const querySlug = urlParams.get('negocio') || urlParams.get('tienda') || urlParams.get('b');
+
+      // 3. Check Pathname: e.g. /negocio/slug or /tienda/slug
+      const pathMatches = window.location.pathname.match(/\/(?:negocio|tienda)\/([^/]+)/);
+      const pathSlug = pathMatches ? pathMatches[1] : null;
+
+      // Special reserved views
+      if (rawHash === 'admin' || window.location.pathname === '/admin' || urlParams.get('admin') === 'true') {
+        goToAdmin();
+        return;
+      }
+      if (rawHash === 'inicio') {
+        goToLanding();
+        return;
+      }
+
+      // Check candidate target
+      let target: string | null = null;
+      if (querySlug) {
+        target = querySlug;
+      } else if (pathSlug) {
+        target = pathSlug;
+      } else if (rawHash.startsWith('negocio/') || rawHash.startsWith('tienda/')) {
+        target = rawHash.replace(/^(?:negocio|tienda)\//, '');
+      } else if (rawHash && rawHash !== 'admin' && rawHash !== 'inicio') {
+        target = rawHash;
+      }
+
+      if (target) {
+        goToPublicStore(decodeURIComponent(target));
+      } else if (window.location.pathname === '/' || window.location.pathname === '' || rawHash === '') {
+        if (defaultHomePage === 'store' && businesses.length > 0) {
+          goToPublicStore(businesses[0].slug);
+        } else {
+          goToLanding();
+        }
+      }
+    };
+
+    handleUrlRoute();
+    window.addEventListener('hashchange', handleUrlRoute);
+    window.addEventListener('popstate', handleUrlRoute);
+    return () => {
+      window.removeEventListener('hashchange', handleUrlRoute);
+      window.removeEventListener('popstate', handleUrlRoute);
+    };
+  }, [businesses.length, defaultHomePage]);
+
+  // Update hash when activeView changes (avoid wiping user's slug during load)
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (activeView === 'admin') {
+      if (window.location.hash !== '#admin') {
+        window.history.replaceState(null, '', '#admin');
+      }
+    } else if (activeView === 'public_store' && activeBusiness) {
+      const targetHash = `#negocio/${activeBusiness.slug}`;
+      if (window.location.hash !== targetHash) {
+        window.history.replaceState(null, '', targetHash);
+      }
+    } else if (activeView === 'landing') {
+      if (window.location.hash.startsWith('#negocio/') || window.location.hash === '#admin') {
+        window.history.replaceState(null, '', ' ');
+      }
+    }
+  }, [activeView, activeBusiness, isLoading]);
+
+  // Show clean loading spinner while initializing
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#05070B] text-slate-100 flex flex-col items-center justify-center p-6 text-center select-none bg-cosmic-grid">
+        <div className="mb-4">
+          <DEKLogo size="lg" variant="symbol" animated={true} />
+        </div>
+        <h2 className="text-base font-bold text-white mb-1 font-['Outfit']">Cargando D.E.K NovaCore...</h2>
+        <p className="text-xs text-cyan-400 font-mono">Conectando catálogo y configuración</p>
+      </div>
+    );
+  }
+
+  // If activeView is Admin
+  if (activeView === 'admin') {
+    return <AdminLayout />;
+  }
+
+  // If activeView is Public Store
+  if (activeView === 'public_store') {
+    if (activeBusiness) {
+      return <PublicBusinessView business={activeBusiness} />;
+    }
+
+    // If a slug was requested but no business matched
+    return (
+      <div className="min-h-screen bg-[#05070B] text-slate-100 flex flex-col items-center justify-center p-6 text-center bg-cosmic-grid">
+        <div className="max-w-lg w-full p-8 rounded-2xl bg-[#080D18] border border-slate-800 shadow-2xl space-y-5">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto text-2xl font-bold font-mono">
+            !
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white font-['Outfit']">Negocio no encontrado</h2>
+            <p className="text-xs text-slate-400 mt-1">
+              {currentPublicSlug
+                ? `No se encontró ningún negocio registrado con el enlace "/#negocio/${currentPublicSlug}".`
+                : 'No hay ningún negocio seleccionado para mostrar.'}
+            </p>
+          </div>
+
+          {businesses.length > 0 && (
+            <div className="pt-2 text-left">
+              <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block mb-2 text-center font-mono">
+                Negocios disponibles en la plataforma:
+              </span>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {businesses.map((biz, idx) => (
+                  <button
+                    key={`${biz.id}-${idx}`}
+                    onClick={() => goToPublicStore(biz.slug)}
+                    className="w-full p-2.5 rounded-xl bg-[#05070B] hover:bg-blue-950/40 border border-slate-800 flex items-center justify-between text-left transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <img src={biz.logoUrl} alt={biz.name} className="w-8 h-8 rounded-lg object-cover" />
+                      <div>
+                        <span className="text-xs font-bold text-white group-hover:text-cyan-300 block font-['Outfit']">
+                          {biz.name}
+                        </span>
+                        <span className="text-[10px] text-cyan-400 font-mono">
+                          /#negocio/{biz.slug}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-bold text-cyan-400 group-hover:translate-x-1 transition-transform">
+                      Abrir &rarr;
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="pt-2 flex justify-center">
+            <button
+              onClick={goToLanding}
+              className="btn-sheen px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-400 text-slate-950 text-xs font-bold rounded-xl cursor-pointer shadow-md font-['Outfit']"
+            >
+              Ir a la Página de Inicio
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const handleOpenOrderModal = (plan = 'Plan Pro') => {
+    setSelectedPlanForModal(plan);
+    setIsOrderModalOpen(true);
+  };
+
+  // Default: Landing Page
+  return (
+    <div className="min-h-screen bg-[#05070B] text-slate-100 flex flex-col transition-colors duration-200 selection:bg-cyan-400 selection:text-slate-950">
+      {/* Precision Trailing Cursor for Desktop */}
+      <CustomCursor />
+
+      {/* Sticky Navigation */}
+      <Navbar
+        onOpenOrderModal={() => handleOpenOrderModal('Plan Pro')}
+      />
+
+      {/* Landing Sections */}
+      <main className="flex-1">
+        <Hero
+          onOpenOrderModal={() => handleOpenOrderModal('Plan Pro')}
+        />
+        <Services />
+        <AnyBusinessCanBeDigital
+          onOpenOrderModal={() => handleOpenOrderModal('Plan Pro')}
+        />
+        <HowItWorks />
+        <TemplatesSection />
+        <Pricing
+          onSelectPlan={(plan) => handleOpenOrderModal(plan)}
+        />
+        <ContactSection
+          onOpenOrderModal={() => handleOpenOrderModal('Plan Pro')}
+        />
+      </main>
+
+      {/* Footer con acceso oculto al admin */}
+      <Footer
+        onOpenOrderModal={() => handleOpenOrderModal('Plan Pro')}
+      />
+
+      {/* Floating Official WhatsApp Concierge Widget */}
+      <FloatingWhatsAppWidget />
+
+      {/* Modal de Pedido para Clientes / Negocios */}
+      <BusinessOrderModal
+        isOpen={isOrderModalOpen}
+        onClose={() => setIsOrderModalOpen(false)}
+        defaultPlan={selectedPlanForModal}
+      />
+    </div>
+  );
+};
+
+export function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <BusinessProvider>
+          <CartProvider>
+            <AppContent />
+          </CartProvider>
+        </BusinessProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;
