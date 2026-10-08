@@ -10,7 +10,7 @@ export const FloatingWhatsAppWidget: React.FC = () => {
   const quickMessages = [
     {
       title: 'Quiero un sitio web para mi negocio',
-      desc: 'Planes desde $15 pago único, sin comisiones.',
+      desc: 'Planes desde $180 pago único, sin comisiones.',
       msg: 'Hola D.E.K NovaCore, quiero información para crear el sitio web o catálogo digital de mi negocio.',
     },
     {

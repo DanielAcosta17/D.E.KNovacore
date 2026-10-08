@@ -297,9 +297,9 @@ export const BusinessOrderModal: React.FC<BusinessOrderModalProps> = ({
                   onChange={(e) => setSelectedPlan(e.target.value)}
                   className="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-800 bg-[#05070B] text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/20 cursor-pointer"
                 >
-                  <option value="Plan Básico ($15 Pago Único)">Plan Básico ($15 Pago Único)</option>
-                  <option value="Plan Pro ($29 Pago Único)">Plan Pro ($29 Pago Único) - Recomendado</option>
-                  <option value="Plan Full Suite ($49 Pago Único)">Plan Full Suite ($49 Pago Único)</option>
+                  <option value="Plan Básico ($180 Pago Único)">Plan Básico ($15 Pago Único)</option>
+                  <option value="Plan Pro ($290 Pago Único)">Plan Pro ($29 Pago Único) - Recomendado</option>
+                  <option value="Plan Full Suite ($490 Pago Único)">Plan Full Suite ($49 Pago Único)</option>
                   <option value="Mantenimiento: Respaldo y Exportación ($5)">Mantenimiento: Respaldo y Exportación ($5)</option>
                   <option value="Mantenimiento: Actualización y Rediseño ($10)">Mantenimiento: Actualización y Rediseño ($10)</option>
                   <option value="Mantenimiento: Renovación Total ($20)">Mantenimiento: Renovación Total ($20)</option>
